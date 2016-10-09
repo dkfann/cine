@@ -1,0 +1,171 @@
+# Overview of React App Setup
+
+First we start off by making a folder with the app name we want, then we do `npm init` within that folder. We create an app with that name.
+
+Let's then install our main dependencies for the app itself - React. This will be the library that handles the views. We'll also install `react-router` to handle routing things properly.
+
+`npm install --save react react-dom react-router`
+
+Next, since we want to use ES6, we will need our JS to be transpiled down to a level that our browsers understand. We'll use Babel for that.
+
+`npm install --save-dev babel-core babel-loader babel-preset-es2015 babel-preset-react`
+
+Lastly, we want to set up Webpack. Webpack is a code bundler - it will take our code in and return a version of our code that has the modifications we specify with it. It will be used to compile our ES6 JS to ES5 JS. We'll also include a dev server so we can run our React code with it.
+
+`npm install --save-dev webpack html-webpack-plugin webpack-dev-server`
+
+Now we have our initial npm modules installed. Let's start making the app. Create a folder called `app` and make an `index.html`.
+
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>React Document</title>
+</head>
+<body>
+	<div id="app"></div>
+</body>
+</html>
+```
+
+We make a div with an id of `app`. We do this so we can target it when we're going to render the React app.
+
+Now, we'll set up our Webpack. Let's make a file called `webpack.config.js`. It's going to take our code, transforms it, then outputs it as a bundled file.
+
+```js
+module.exports = {
+	// Errors that show up in console will now reflect the actual line of code it originates from with respect to your source code within the minified/bundled code.
+	devtool: 'source-map',
+	// The entry of our file. This is the js file that we're putting into Webpack.
+	entry: [
+		'./app/index.js',
+	],
+	// This determines where Webpack outputs the file after transforming it.
+	output: {
+		path: __dirname + '/dist',
+		filename: 'index_bundle.js',
+	},
+	// This is how we tell Webpack what sort of transformations we want done to the input js.
+	module: {
+		// We have an array of objects that determine what files will go through a specified loader.
+		// Here, we use a regex to find any files that have a .js extension, excluding the files
+		// in the /node_modules/ folder, then use the loader babel-loader to transform the code
+		// in those files from ES6 to JS that the browser understands.
+		// babel-loader is available as a loader because we installed it earlier with the npm install
+		// string for babel.
+		loaders: [
+			{ test: /\.js$/, exclude: /node_modules/, loader: 'babel-loader' }
+		]
+	},
+}
+```
+
+We're also going to add some presets to how Babel transforms our code. We can do this by making a `babelrc` file in the root directory. In there, we'll add this small bit of config:
+
+```
+{
+	'presets': [
+		'react',
+		'es2015'
+	]
+}
+```
+
+We get this preset from when we installed `babel-preset-react` in the npm install for babel. This will go through our files and convert any ES6 syntax and JSX into regular JS.
+
+Now we're going to install the HTML Webpack Plugin. Let's go back into our `webpack.config.js` and add the following code in:
+
+```js
+const HTMLWebpackPlugin = require('html-webpack-plugin');
+const HTMLWebpackPluginConfig = new HTMLWebpackPlugin({
+	template: __dirname + '/app/index.html',
+	fielanem: 'index.html',
+	inject: 'body',
+});
+```
+
+What this will do is when Webpack is taking your code and outputting it into one bundled file in the `dist` directory, the HTMLWebpackPlugin will take your input template (which we've specified as 
+the `index.html` file in the app folder), then inject a script tag that points to the `index_bundle.js` that Webpack is outputting into the body of the output file, which will also be named 
+`index.html`. This file will reside in the `dist` folder, along with the `index_bundle.js`.
+
+## Setting up a simple React Component
+
+With all of that set up, we can now write React components freely and Webpack will take our ES6 JS and JSX and transpile them to JS that the browser will understand.
+
+Within `index.js`, let's add the following code:
+
+```js
+import React from 'react';
+import ReactDOM from 'react-dom';
+
+class HelloWorld extends React.Component {
+	render() {
+		return (
+			<div> Hello world! </div>
+		);
+	}
+}
+
+ReactDOM.render(
+	<HelloWorld />,
+	document.getElementById('app')
+);
+```
+
+We import React and ReactDOM from their respective modules that we installed with npm.
+
+We're using ES6 syntax to create the React component.
+
+Finally, we render with `ReactDOM`, selecting the component `HelloWorld`, targeting the DOM element with the id `app`.
+
+Since we're developing, we don't need to minify our code before having everything set up. Let's create a new script in `package.json` that will use a dev server with hot module replacement.
+Add `"start": "webpack-dev-server --inline --hot --port 8080"` as a script in `package.json`. We'll run `npm start` to run the server.
+
+_Using ReactRouter_
+
+Making the Component:
+
+Make a folder called `containers` and add a basic container:
+
+```js
+import React from 'react';
+
+class HelloWorld extends React.Component {
+	render() {
+		return (
+			<div> Hello World!</div>
+		)
+	}
+}
+```
+
+Make a folder called `config` and add a file called `routes.js`:
+
+```js
+import React from 'react';
+import {Route, Router, IndexRoute, hashHistory} from 'react-router';
+import HelloWorld from '../containers/HelloWorld';
+
+export default (
+	<Router history={hashHistory}>
+		<Route path="/" component={HelloWorld}/>
+	</Router>
+);
+```
+
+Now, in `index.js`, let's remove the component there and import the routes instead. We'll render routes in the `ReactDOM` render call.
+
+```js
+import React from 'react';
+import ReactDOM from 'react-dom';
+import routes from '../config/routes';
+
+ReactDOM.render(
+	routes,
+	document.getElementById('app')
+);
+```
+
+A lot of this setup was derived from the setup found in Tyler McGinnis' ReactJS Fundamentals found here: http://courses.reactjsprogram.com/p/reactjsfundamentals and from his course on Egghead:
+https://egghead.io/courses/build-your-first-react-js-application
